@@ -1823,8 +1823,8 @@ IF MCU_48MHZ == 1
 ENDIF
 	mov	Temp2, A					; Store commutation period in Temp2 (hi byte)
 
-	jnb	Flag_High_Rpm, calc_next_comm_normal	; Branch normal rpm
-	ajmp	calc_next_comm_period_fast			; Branch high rpm
+	jnb	Flag_High_Rpm, calc_next_comm_period_normal	; Branch normal rpm
+	ajmp	calc_next_comm_period_fast				; Branch high rpm
 
 calc_next_comm_startup:
 	; Calculate this commutation time
@@ -1873,7 +1873,7 @@ calc_next_comm_startup_no_X:
 
 	sjmp	calc_next_comm_div_4_1
 
-calc_next_comm_normal:
+calc_next_comm_period_normal:
 	; Prepare averaging by dividing Comm_Period4x and current commutation period (Temp2/1) according to speed.
 	mov	Temp3, Comm_Period4x_L		; Comm_Period4x holds the time of 4 commutations
 	mov	Temp4, Comm_Period4x_H
