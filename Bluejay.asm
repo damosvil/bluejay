@@ -124,18 +124,18 @@ DEFAULT_PGM_DEMAG_COMP			EQU	2	; 1=Disabled	2=Low		3=High
 DEFAULT_PGM_DIRECTION			EQU	1	; 1=Normal	2=Reversed	3=Bidir		4=Bidir rev
 DEFAULT_PGM_BEEP_STRENGTH		EQU	40	; 0..255 (BLHeli_S is 1..255)
 DEFAULT_PGM_BEACON_STRENGTH		EQU	80	; 0..255
-DEFAULT_PGM_BEACON_DELAY			EQU	4	; 1=1m		2=2m			3=5m			4=10m		5=Infinite
-DEFAULT_PGM_ENABLE_TEMP_PROT		EQU	7	; 0=Disabled	1=80C	2=90C	3=100C	4=110C	5=120C	6=130C	7=140C
+DEFAULT_PGM_BEACON_DELAY		EQU	4	; 1=1m		2=2m			3=5m			4=10m		5=Infinite
+DEFAULT_PGM_ENABLE_TEMP_PROT	EQU	7	; 0=Disabled	1=80C	2=90C	3=100C	4=110C	5=120C	6=130C	7=140C
 
 DEFAULT_PGM_BRAKE_ON_STOP		EQU	0	; 1=Enabled	0=Disabled
 DEFAULT_PGM_LED_CONTROL			EQU	0	; Byte for LED control. 2 bits per LED, 0=Off, 1=On
 
-DEFAULT_PGM_STARTUP_POWER_MIN		EQU	51	; 0..255 => (1000..1125 Throttle): value * (1000 / 2047) + 1000
-DEFAULT_PGM_STARTUP_BEEP			EQU	1	; 0=Short beep, 1=Melody
+DEFAULT_PGM_STARTUP_POWER_MIN	EQU	51	; 0..255 => (1000..1125 Throttle): value * (1000 / 2047) + 1000
+DEFAULT_PGM_STARTUP_BEEP		EQU	1	; 0=Short beep, 1=Melody
 DEFAULT_PGM_DITHERING			EQU	1	; 0=Disabled, 1=Enabled
 
-DEFAULT_PGM_STARTUP_POWER_MAX		EQU	25	; 0..255 => (1000..2000 Throttle): Maximum startup power
-DEFAULT_PGM_BRAKING_STRENGTH		EQU	255	; 0..255 => 0..100 % Braking
+DEFAULT_PGM_STARTUP_POWER_MAX	EQU	25	; 0..255 => (1000..2000 Throttle): Maximum startup power
+DEFAULT_PGM_BRAKING_STRENGTH	EQU	255	; 0..255 => 0..100 % Braking
 
 ;**** **** **** **** ****
 ; Temporary register definitions
@@ -271,7 +271,7 @@ _Pgm_Rampup_Slope:			DS	1	;
 Pgm_Rpm_Power_Slope:		DS	1	; Low RPM power protection slope (factor)
 Pgm_Pwm_Freq:				DS	1	; PWM frequency (temporary method for display)
 Pgm_Direction:				DS	1	; Rotation direction
-_Pgm_Input_Pol:			DS	1	; Input PWM polarity
+_Pgm_Input_Pol:				DS	1	; Input PWM polarity
 Initialized_L_Dummy:		DS	1	; Place holder
 Initialized_H_Dummy:		DS	1	; Place holder
 _Pgm_Enable_TX_Program:		DS	1	; Enable/disable value for TX programming
@@ -279,10 +279,10 @@ Pgm_Braking_Strength:		DS	1	; Set maximum braking strength (complementary pwm)
 _Pgm_Gov_Setup_Target:		DS	1	; Main governor setup target
 _Pgm_Startup_Rpm:			DS	1	; Startup RPM
 _Pgm_Startup_Accel:			DS	1	; Startup acceleration
-_Pgm_Volt_Comp:			DS	1	; Voltage comp
+_Pgm_Volt_Comp:				DS	1	; Voltage comp
 Pgm_Comm_Timing:			DS	1	; Commutation timing
 _Pgm_Damping_Force:			DS	1	; Damping force
-_Pgm_Gov_Range:			DS	1	; Governor range
+_Pgm_Gov_Range:				DS	1	; Governor range
 _Pgm_Startup_Method:		DS	1	; Startup method
 _Pgm_Min_Throttle:			DS	1	; Minimum throttle
 _Pgm_Max_Throttle:			DS	1	; Maximum throttle
@@ -290,7 +290,7 @@ Pgm_Beep_Strength:			DS	1	; Beep strength
 Pgm_Beacon_Strength:		DS	1	; Beacon strength
 Pgm_Beacon_Delay:			DS	1	; Beacon delay
 _Pgm_Throttle_Rate:			DS	1	; Throttle rate
-Pgm_Demag_Comp:			DS	1	; Demag compensation
+Pgm_Demag_Comp:				DS	1	; Demag compensation
 _Pgm_BEC_Voltage_High:		DS	1	; BEC voltage
 _Pgm_Center_Throttle:		DS	1	; Center throttle (in bidirectional mode)
 _Pgm_Main_Spoolup_Time:		DS	1	; Main spoolup time
@@ -302,7 +302,7 @@ Pgm_Brake_On_Stop:			DS	1	; Braking when throttle is zero
 Pgm_LED_Control:			DS	1	; LED control
 
 ISEG AT 0B0h
-Stack:					DS	16	; Reserved stack space
+Stack:						DS	16	; Reserved stack space
 
 ISEG AT 0C0h
 Dithering_Patterns:			DS	16	; Bit patterns for pwm dithering
@@ -328,7 +328,7 @@ Eep_Pgm_Startup_Beep:		DB	DEFAULT_PGM_STARTUP_BEEP
 Eep_Pgm_Dithering:			DB	DEFAULT_PGM_DITHERING
 Eep_Pgm_Startup_Power_Max:	DB	DEFAULT_PGM_STARTUP_POWER_MAX
 _Eep_Pgm_Rampup_Slope:		DB	0FFh
-Eep_Pgm_Rpm_Power_Slope:		DB	DEFAULT_PGM_RPM_POWER_SLOPE	; EEPROM copy of programmed rpm power slope (formerly startup power)
+Eep_Pgm_Rpm_Power_Slope:	DB	DEFAULT_PGM_RPM_POWER_SLOPE	; EEPROM copy of programmed rpm power slope (formerly startup power)
 Eep_Pgm_Pwm_Freq:			DB	(24 SHL PWM_FREQ)			; Temporary method for display
 Eep_Pgm_Direction:			DB	DEFAULT_PGM_DIRECTION		; EEPROM copy of programmed rotation direction
 _Eep__Pgm_Input_Pol:		DB	0FFh
@@ -343,11 +343,11 @@ _Eep_Pgm_Volt_Comp:			DB	0FFh
 Eep_Pgm_Comm_Timing:		DB	DEFAULT_PGM_COMM_TIMING		; EEPROM copy of programmed commutation timing
 _Eep_Pgm_Damping_Force:		DB	0FFh
 _Eep_Pgm_Gov_Range:			DB	0FFh
-_Eep_Pgm_Startup_Method:		DB	0FFh
+_Eep_Pgm_Startup_Method:	DB	0FFh
 _Eep_Pgm_Min_Throttle:		DB	0FFh						; EEPROM copy of programmed minimum throttle
 _Eep_Pgm_Max_Throttle:		DB	0FFh						; EEPROM copy of programmed minimum throttle
 Eep_Pgm_Beep_Strength:		DB	DEFAULT_PGM_BEEP_STRENGTH	; EEPROM copy of programmed beep strength
-Eep_Pgm_Beacon_Strength:		DB	DEFAULT_PGM_BEACON_STRENGTH	; EEPROM copy of programmed beacon strength
+Eep_Pgm_Beacon_Strength:	DB	DEFAULT_PGM_BEACON_STRENGTH	; EEPROM copy of programmed beacon strength
 Eep_Pgm_Beacon_Delay:		DB	DEFAULT_PGM_BEACON_DELAY		; EEPROM copy of programmed beacon delay
 _Eep_Pgm_Throttle_Rate:		DB	0FFh
 Eep_Pgm_Demag_Comp:			DB	DEFAULT_PGM_DEMAG_COMP		; EEPROM copy of programmed demag compensation
@@ -361,7 +361,7 @@ _Eep_Pgm_Pwm_Dither:		DB	0FFh
 Eep_Pgm_Brake_On_Stop:		DB	DEFAULT_PGM_BRAKE_ON_STOP	; EEPROM copy of programmed braking when throttle is zero
 Eep_Pgm_LED_Control:		DB	DEFAULT_PGM_LED_CONTROL		; EEPROM copy of programmed LED control
 
-Eep_Dummy:				DB	0FFh						; EEPROM address for safety reason
+Eep_Dummy:					DB	0FFh						; EEPROM address for safety reason
 
 CSEG AT 1A60h
 Eep_Name:					DB	"Bluejay         "			; Name tag (16 Bytes)
@@ -1666,11 +1666,19 @@ set_pwm_limit_high_rpm_store:
 ;
 ;**** **** **** **** **** **** **** **** **** **** **** **** ****
 check_temp_and_limit_power:
+    ; Is temp protection enabled?
+	mov	Temp2, #Pgm_Enable_Temp_Prot
+	mov	A, @Temp2
+	jz	temp_check_exit			    ; No - Do nothing
+
+	; Check whether it is time to check temperature
 	inc	Adc_Conversion_Cnt			; Increment conversion counter
 	clr	C
 	mov	A, Adc_Conversion_Cnt		; Is conversion count equal to temp rate?
-	subb	A, #8
-	jc	temp_increase_pwm_limit		; No - increase pwm limit
+	subb	A, #TEMP_CHECK_RATE
+	jc	temp_check_exit		        ; No - increase pwm limit
+
+	mov	Adc_Conversion_Cnt, #0		; Yes - temperature check. Reset counter
 
 	; Wait for ADC conversion to complete
 	jnb	ADC0CN0_ADINT, check_temp_and_limit_power
@@ -1678,81 +1686,54 @@ check_temp_and_limit_power:
 	mov	Temp3, ADC0L				; Read ADC result
 	mov	Temp4, ADC0H
 
-	Stop_Adc
+	Stop_Adc                        ; This really does nothing
 
-	mov	Adc_Conversion_Cnt, #0		; Yes - temperature check. Reset counter
+    ; Check TEMP_LIMIT and TEMP_LIMIT_STEP to understand temperature sampling
+	mov	A, Temp4						; Is temperature reading below 256 (about 25 degree celsius)
+	jz	temp_check_increase_pwm_limit	; Yes - increase pwm
 
-	mov	Temp2, #Pgm_Enable_Temp_Prot	; Is temp protection enabled?
-	mov	A, @Temp2
-	jz	temp_check_exit			; No - branch
+	; Load A with low part of temperature sample
+	mov A, Temp3
 
-	mov	A, Temp4					; Is temperature reading below 256?
-	jnz	temp_average_inc_dec		; No - proceed
-
-	mov	A, Current_Average_Temp		; Yes - decrement average
-	jz	temp_average_updated		; Already zero - no change
-	sjmp	temp_average_dec			; Decrement
-
-temp_average_inc_dec:
+	; Is temperature below safe limit? -> Increase pwm limit : continue
 	clr	C
-	mov	A, Temp3					; Check if current temperature is above or below average
-	subb	A, Current_Average_Temp
-	jz	temp_average_updated_load_acc	; Equal - no change
+	subb	A, Temp_Prot_Limit
+	jc	temp_check_increase_pwm_limit
 
-	mov	A, Current_Average_Temp		; Above - increment average
-	jnc	temp_average_inc
-
-	jz	temp_average_updated		; Below - decrement average if average is not already zero
-temp_average_dec:
-	dec	A						; Decrement average
-	sjmp	temp_average_updated
-
-temp_average_inc:
-	inc	A						; Increment average
-	jz	temp_average_dec
-	sjmp	temp_average_updated
-
-temp_average_updated_load_acc:
-	mov	A, Current_Average_Temp
-temp_average_updated:
-	mov	Current_Average_Temp, A
-
+	; Is temperature below shutdown limit? -> Decrease pwm limit to safe value : continue
 	clr	C
-	subb	A, Temp_Prot_Limit			; Is temperature below first limit?
-	jc	temp_check_exit			; Yes - exit
+	subb	A, #(2 * TEMP_LIMIT_STEP)
+	jc temp_check_decrease_pwm_limit_safe
 
-	mov	Pwm_Limit, #192			; No - limit pwm
-
-	clr	C
-	subb	A, #(TEMP_LIMIT_STEP / 2)	; Is temperature below second limit
-	jc	temp_check_exit			; Yes - exit
-
-	mov	Pwm_Limit, #128			; No - limit pwm
-
-	clr	C
-	subb	A, #(TEMP_LIMIT_STEP / 2)	; Is temperature below third limit
-	jc	temp_check_exit			; Yes - exit
-
-	mov	Pwm_Limit, #64				; No - limit pwm
-
-	clr	C
-	subb	A, #(TEMP_LIMIT_STEP / 2)	; Is temperature below final limit
-	jc	temp_check_exit			; Yes - exit
-
-	mov	Pwm_Limit, #0				; No - limit pwm
-
-temp_check_exit:
-	ret
-
-temp_increase_pwm_limit:
+	; Is pwm_limit zero? -> Exit : Decrease pwm limit
 	mov	A, Pwm_Limit
-	add	A, #16					; Increase pwm limit
+	jz temp_check_exit
+	jmp temp_check_decrease_pwm_limit
+
+temp_check_decrease_pwm_limit_safe:
+	; Is pwm_limit below safe value? -> Exit : Decrease pwm limit
+	clr C
+	mov	A, Pwm_Limit
+	subb A, #PWM_MIN_SAFE
+	jc temp_check_exit
+
+temp_check_decrease_pwm_limit:
+	; Do decrease and store pwm limit
+	mov	A, Pwm_Limit
+	dec A
+	mov Pwm_Limit, A
+	jmp temp_check_exit
+
+temp_check_increase_pwm_limit:
+	mov	A, Pwm_Limit
+	inc A                       ; Increase pwm limit
 	jnc	($+4)					; Check if above maximum
 	mov	A, #255					; Set maximum value
 
-	mov	Pwm_Limit, A				; Set new pwm limit
-	ret
+	mov	Pwm_Limit, A			; Set new pwm limit
 
+temp_check_exit:
+	ret
 
 
 ;**** **** **** **** **** **** **** **** **** **** **** **** ****
