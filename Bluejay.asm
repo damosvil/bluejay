@@ -894,7 +894,7 @@ t1_int_stall_boost:
 	mov	Temp5, #07h
 
 t1_int_startup_boosted:
-	; Set 8-bit value
+	; Convert throttle request from 11 bit to a 8-bit aka rcp (rc pulse)
 	mov	A, Temp4
 	anl	A, #0F8h
 	orl	A, Temp5					; Assumes Temp5 to be 3-bit (11-bit rcp)
@@ -934,6 +934,7 @@ t1_int_zero_rcp_checked:
 	subb	A, Temp2					; 8-bit rc pulse
 	jnc	t1_int_scale_pwm_resolution
 
+	; Override rc pulse with pwm limit
 IF PWM_BITS_H == 0					; 8-bit pwm
 	mov	A, Temp6
 	mov	Temp2, A
