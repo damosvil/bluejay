@@ -231,7 +231,6 @@ Pwm_Braking_L:				DS	1	; Max Braking pwm (lo byte)
 Pwm_Braking_H:				DS	1	; Max Braking pwm (hi byte)
 
 Adc_Conversion_Cnt:			DS	1	; Adc conversion counter
-Current_Average_Temp:		DS	1	; Current average temperature (lo byte ADC reading, assuming hi byte is 1)
 Temp_Prot_Limit:			DS	1	; Temperature protection limit
 
 Beep_Strength:				DS	1	; Strength of beeps
@@ -3943,16 +3942,9 @@ motor_start:
 	; Read initial average temperature
 	Start_Adc						; Start adc conversion
 
-	jnb	ADC0CN0_ADINT, $			; Wait for adc conversion to complete
-
-	mov	Current_Average_Temp, ADC0L	; Read initial temperature
-	mov	A, ADC0H
-	jnz	($+5)					; Is reading below 256?
-	mov	Current_Average_Temp, #0		; Yes - set average temperature value to zero
-
-	mov	Adc_Conversion_Cnt, #8		; Make sure a temp reading is done
+	mov	Adc_Conversion_Cnt, #TEMP_CHECK_RATE	; Make sure a temp reading is done
 	call	check_temp_and_limit_power
-	mov	Adc_Conversion_Cnt, #8		; Make sure a temp reading is done next time
+	mov	Adc_Conversion_Cnt, #TEMP_CHECK_RATE	; Make sure a temp reading is done next time
 
 	; Set up start operating conditions
 	clr	IE_EA					; Disable interrupts
