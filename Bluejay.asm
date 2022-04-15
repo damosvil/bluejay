@@ -223,7 +223,7 @@ Wt_Zc_Tout_Start_H:			DS	1	; Timer3 start point for zero cross scan timeout (hi 
 Wt_Comm_Start_L:			DS	1	; Timer3 start point from zero cross to commutation (lo byte)
 Wt_Comm_Start_H:			DS	1	; Timer3 start point from zero cross to commutation (hi byte)
 
-Pwm_Limit:				DS	1	; Maximum allowed pwm (8-bit)
+Pwm_Limit:					DS	1	; Maximum allowed pwm (8-bit)
 Pwm_Limit_By_Rpm:			DS	1	; Maximum allowed pwm for low or high rpm (8-bit)
 Pwm_Limit_Beg:				DS	1	; Initial pwm limit (8-bit)
 
@@ -232,6 +232,7 @@ Pwm_Braking_H:				DS	1	; Max Braking pwm (hi byte)
 
 Adc_Conversion_Cnt:			DS	1	; Adc conversion counter
 Temp_Prot_Limit:			DS	1	; Temperature protection limit
+Pwm_Requested:				DS	1	; pwm requested
 
 Beep_Strength:				DS	1	; Strength of beeps
 
@@ -934,12 +935,18 @@ t1_int_zero_rcp_checked:
 	subb	A, Temp2					; 8-bit rc pulse
 	jnc	t1_int_scale_pwm_resolution
 
+	; Update Pwm requested. Use this value to set pwm limit
+	; again for fast pwm limiting
+	mov A, Temp6
+	mov Pwm_Requested, A
+
 	; Override rc pulse with pwm limit
 IF PWM_BITS_H == 0					; 8-bit pwm
-	mov	A, Temp6
+	;mov	A, Temp6
 	mov	Temp2, A
 ELSE
-	mov	A, Temp6					; Multiply limit by 8 for 11-bit pwm
+	; Multiply limit by 8 for 11-bit pwm
+	;mov	A, Temp6
 	mov	B, #8
 	mul	AB
 	mov	Temp4, A
@@ -1688,36 +1695,46 @@ check_temp_and_limit_power:
 
 	Stop_Adc                        ; This really does nothing
 
-    ; Check TEMP_LIMIT and TEMP_LIMIT_STEP to understand temperature sampling
+    ; Check TEMP_LIMIT and TEMP_LIMIT_STEP @ base.inc to understand temperature sampling
 	mov	A, Temp4						; Is temperature reading below 256 (about 25 degree celsius)
 	jz	temp_check_increase_pwm_limit	; Yes - increase pwm
 
 	; Load A with low part of temperature sample
 	mov A, Temp3
 
-	; Is temperature below safe limit? -> Increase pwm limit : continue
+	; Is temperature below safety limit? -> Increase pwm limit : continue
 	clr	C
-	subb	A, Temp_Prot_Limit
+	subb A, Temp_Prot_Limit
 	jc	temp_check_increase_pwm_limit
 
+	; Shutdown limit is 10 degree celsius above safety limit
 	; Is temperature below shutdown limit? -> Decrease pwm limit to safe value : continue
 	clr	C
-	subb	A, #(2 * TEMP_LIMIT_STEP)
-	jc temp_check_decrease_pwm_limit_safe
+	subb A, #TEMP_LIMIT_STEP
+	jc temp_check_decrease_pwm_limit_clip
 
-	; Is pwm_limit zero? -> Exit : Decrease pwm limit
+	; Shutdown esc (try to avoid burning things)
+	mov	Pwm_Limit, 0
+	jmp temp_check_exit
+
+temp_check_decrease_pwm_limit_clip:
+	; Check requested > limit? -> continue decrementing limit : clip limit to requested
+	clr C
 	mov	A, Pwm_Limit
-	jz temp_check_exit
-	jmp temp_check_decrease_pwm_limit
+	subb A, Pwm_Requested
+	jc temp_check_decrease_pwm_limit	; requested > limit ? decrease limit : clip limit
 
-temp_check_decrease_pwm_limit_safe:
+	; Clip limit to requested
+	mov	A, Pwm_Requested
+	mov Pwm_Limit, A
+
+temp_check_decrease_pwm_limit:
 	; Is pwm_limit below safe value? -> Exit : Decrease pwm limit
 	clr C
 	mov	A, Pwm_Limit
 	subb A, #PWM_MIN_SAFE
 	jc temp_check_exit
 
-temp_check_decrease_pwm_limit:
 	; Do decrease and store pwm limit
 	mov	A, Pwm_Limit
 	dec A
