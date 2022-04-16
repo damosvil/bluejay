@@ -232,7 +232,9 @@ Pwm_Braking_H:				DS	1	; Max Braking pwm (hi byte)
 
 Adc_Conversion_Cnt:			DS	1	; Adc conversion counter
 Temp_Prot_Limit:			DS	1	; Temperature protection limit
-Pwm_Requested:				DS	1	; pwm requested
+Temp_Prot_Stuttering:		DS	1	; Temperature Protection Stuttering level (to be charged in timeout hi byte)
+Temp_Prot_Stuttering_TO_L:	DS	1	; Temperature Protection Stuttering timeout lo byte
+Temp_Prot_Stuttering_TO_H:	DS	1	; Temperature Protection Stuttering timeout hi byte
 
 Beep_Strength:				DS	1	; Strength of beeps
 
@@ -932,26 +934,83 @@ t1_int_zero_rcp_checked:
 	; Check against limit
 	clr	C
 	mov	A, Temp6
-	subb	A, Temp2					; 8-bit rc pulse
-	jnc	t1_int_scale_pwm_resolution
-
-	; Update Pwm requested. Use this value to set pwm limit
-	; again for fast pwm limiting
-	mov A, Temp6
-	mov Pwm_Requested, A
+	subb	A, Temp2					; A = A - (8-bit rc pulse)
+	jnc	t1_int_stuttering_check
 
 	; Override rc pulse with pwm limit
 IF PWM_BITS_H == 0					; 8-bit pwm
-	;mov	A, Temp6
+	mov	A, Temp6
 	mov	Temp2, A
 ELSE
 	; Multiply limit by 8 for 11-bit pwm
-	;mov	A, Temp6
+	mov	A, Temp6
 	mov	B, #8
 	mul	AB
 	mov	Temp4, A
 	mov	Temp5, B
 ENDIF
+
+t1_int_stuttering_check:
+	; Temp_Prot_Stuttering is zero -> Avoid stuttering
+	mov A, Temp_Prot_Stuttering
+	jz t1_int_scale_pwm_resolution	; Avoid stuttering control
+
+	; Pwm_Limit is zero? -> Avoid stuttering
+	mov A, Pwm_Limit
+	jz t1_int_scale_pwm_resolution	; Avoid stuttering control
+
+	; Temp_Prot_Stuttering timeout other than zero? -> Avoid stuttering & decrement timeout counter
+	mov A, Temp_Prot_Stuttering_TO_L
+	jnz t1_int_stuttering_timeout_decrement
+	mov A, Temp_Prot_Stuttering_TO_H
+	jnz t1_int_stuttering_timeout_decrement
+
+	; Reload temperature protection stuttering counter
+	mov A, Temp_Prot_Stuttering
+	mov Temp_Prot_Stuttering_TO_H, A
+	mov Temp_Prot_Stuttering_TO_L, #0
+
+	; rc pulse smaller than 5 -> Avoid stuttering
+	clr C
+	mov A, Temp2
+	subb A, #PWM_STUTTER_8BIT
+	jc t1_int_stuttering_timeout_decrement
+
+	; SS TT UU TT TT EE RR here!
+IF PWM_BITS_H == 0					; 8-bit pwm
+	mov	Temp2, A	; Substracted above. Only store
+ELSE
+	; Substract lo byte
+	clr C
+	mov A, Temp4
+	subb A, #PWM_STUTTER_11BIT
+	mov Temp4, A
+	mov A, Temp5
+	subb A, #0
+	mov Temp5, A
+ENDIF
+
+	; KK
+IF PWM_BITS_H == 0
+	mov	Temp2, 5
+ELSE
+	mov Temp4, 40
+	mov Temp5, 0
+ENDIF
+
+
+t1_int_stuttering_timeout_decrement:
+	; Decrement temperature protection stuttering timeout
+	clr C
+	mov A, Temp_Prot_Stuttering_TO_L
+	subb A, #1
+	mov Temp_Prot_Stuttering_TO_L, A
+
+	; If no carry avoid decrementing high part
+	jnc t1_int_scale_pwm_resolution
+	mov A, Temp_Prot_Stuttering_TO_H
+	subb A, #0
+	mov Temp_Prot_Stuttering_TO_H, A
 
 t1_int_scale_pwm_resolution:
 ; Scale pwm resolution and invert (duty cycle is defined inversely)
@@ -1697,57 +1756,39 @@ check_temp_and_limit_power:
 
     ; Check TEMP_LIMIT and TEMP_LIMIT_STEP @ base.inc to understand temperature sampling
 	mov	A, Temp4						; Is temperature reading below 256 (about 25 degree celsius)
-	jz	temp_check_increase_pwm_limit	; Yes - increase pwm
+	jz	temp_check_exit					; Yes - Do nothing
 
 	; Load A with low part of temperature sample
 	mov A, Temp3
 
-	; Is temperature below safety limit? -> Increase pwm limit : continue
+	; Do not limit pwm unless third temperature limit is reached
+	; Override initial max power. This function is called in running state
+	mov	Pwm_Limit, 255
+
+	; Is temperature below limit? -> exit : continue
 	clr	C
-	subb A, Temp_Prot_Limit
-	jc	temp_check_increase_pwm_limit
+	subb A, #9; Temp_Prot_Limit
+	jc	temp_check_exit
 
-	; Shutdown limit is 10 degree celsius above safety limit
-	; Is temperature below shutdown limit? -> Decrease pwm limit to safe value : continue
+	; Set stuttering level to 1 (warning)
+	mov Temp_Prot_Stuttering, #PWM_STUTTER_RATE_LOW
+
+	; Is temperature below next limit? -> exit : continue
 	clr	C
-	subb A, #TEMP_LIMIT_STEP
-	jc temp_check_decrease_pwm_limit_clip
-
-	; Shutdown esc (try to avoid burning things)
-	mov	Pwm_Limit, 0
-	jmp temp_check_exit
-
-temp_check_decrease_pwm_limit_clip:
-	; Check requested > limit? -> continue decrementing limit : clip limit to requested
-	clr C
-	mov	A, Pwm_Limit
-	subb A, Pwm_Requested
-	jc temp_check_decrease_pwm_limit	; requested > limit ? decrease limit : clip limit
-
-	; Clip limit to requested
-	mov	A, Pwm_Requested
-	mov Pwm_Limit, A
-
-temp_check_decrease_pwm_limit:
-	; Is pwm_limit below safe value? -> Exit : Decrease pwm limit
-	clr C
-	mov	A, Pwm_Limit
-	subb A, #PWM_MIN_SAFE
+	subb A, #(TEMP_LIMIT_STEP / 2)
 	jc temp_check_exit
 
-	; Do decrease and store pwm limit
-	mov	A, Pwm_Limit
-	dec A
-	mov Pwm_Limit, A
-	jmp temp_check_exit
+	; Set stuttering level to 2 (critical)
+	mov Temp_Prot_Stuttering, #PWM_STUTTER_RATE_HIGH
 
-temp_check_increase_pwm_limit:
-	mov	A, Pwm_Limit
-	inc A                       ; Increase pwm limit
-	jnc	($+4)					; Check if above maximum
-	mov	A, #255					; Set maximum value
+	; Is temperature below next limit? -> exit : continue
+	clr	C
+	subb A, #(TEMP_LIMIT_STEP / 2)
+	jc temp_check_exit
 
-	mov	Pwm_Limit, A			; Set new pwm limit
+	; Shut down esc & Disable stuttering
+	mov	Pwm_Limit, 0
+	mov Temp_Prot_Stuttering, #0
 
 temp_check_exit:
 	ret
