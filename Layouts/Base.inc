@@ -315,11 +315,13 @@ $endif
 ;**** **** **** **** ****
 ; ADC and temperature measurement
 ;**** **** **** **** ****
-TEMP_LIMIT		EQU	49			; Temperature measurement ADC value for which main motor power is limited at 80degC (low byte, assuming high byte is 1)
-TEMP_LIMIT_STEP	EQU	9			; Temperature measurement ADC value increment for another 10degC
+TEMP_CHECK_RATE		EQU	8			; Temperature check rate
+TEMP_LIMIT			EQU	49			; Temperature measurement ADC value for which main motor power is limited at 80degC (low byte, assuming high byte is 1)
+TEMP_LIMIT_STEP		EQU	9			; Temperature measurement ADC value increment for another 10degC
 
 Initialize_Adc MACRO
 	mov	REF0CN, #0Ch				;; Set vdd (3.3V) as reference. Enable temp sensor and bias
+	; clk, 10bit mode, gain 1
 IF MCU_48MHZ == 0
 	mov	ADC0CF, #59h				;; ADC clock 2MHz, PGA gain 1
 ELSE

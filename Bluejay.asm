@@ -231,7 +231,7 @@ Pwm_Braking_L:				DS	1	; Max Braking pwm (lo byte)
 Pwm_Braking_H:				DS	1	; Max Braking pwm (hi byte)
 
 Adc_Conversion_Cnt:			DS	1	; Adc conversion counter
-Current_Average_Temp:		DS	1	; Current average temperature (lo byte ADC reading, assuming hi byte is 1)
+Temp_Level:			DS	1	; Current temperature level (lo byte ADC reading, assuming hi byte is 1)
 Temp_Prot_Limit:			DS	1	; Temperature protection limit
 
 Beep_Strength:				DS	1	; Strength of beeps
@@ -1666,78 +1666,81 @@ set_pwm_limit_high_rpm_store:
 ;
 ;**** **** **** **** **** **** **** **** **** **** **** **** ****
 check_temp_and_limit_power:
-	inc	Adc_Conversion_Cnt			; Increment conversion counter
-	clr	C
-	mov	A, Adc_Conversion_Cnt		; Is conversion count equal to temp rate?
-	subb	A, #8
-	jc	temp_increase_pwm_limit		; No - increase pwm limit
+	; Increment conversion counter and check temp rate is reached
+	inc	Adc_Conversion_Cnt
+	mov  A, Adc_Conversion_Cnt
+	cjne A, #TEMP_CHECK_RATE, temp_check_exit
+	mov	Adc_Conversion_Cnt, #0		; Reset temp check counter
 
 	; Wait for ADC conversion to complete
-	jnb	ADC0CN0_ADINT, check_temp_and_limit_power
+	jnb	ADC0CN0_ADINT, $
 
-	mov	Temp3, ADC0L				; Read ADC result
+	; Read ADC 10 bit result
+	mov	Temp3, ADC0L
 	mov	Temp4, ADC0H
 
 	Stop_Adc
 
-	mov	Adc_Conversion_Cnt, #0		; Yes - temperature check. Reset counter
-
 	mov	Temp2, #Pgm_Enable_Temp_Prot	; Is temp protection enabled?
 	mov	A, @Temp2
-	jz	temp_check_exit			; No - branch
+	jz	temp_check_exit				; No - branch
 
-	mov	A, Temp4					; Is temperature reading below 256?
-	jnz	temp_average_inc_dec		; No - proceed
+	; Check TEMP_LIMIT in Base.inc and make calculations to understand temperature readings
+	; Is temperature reading below 256? (ADC 10bit value corresponding to 25ºC. Low cut value)
+	mov	A, Temp4
+	jnz	temp_level_check			; No -> Check
+	jmp temp_level_dec				; Yes -> Decrease
 
-	mov	A, Current_Average_Temp		; Yes - decrement average
-	jz	temp_average_updated		; Already zero - no change
-	sjmp	temp_average_dec			; Decrement
-
-temp_average_inc_dec:
+temp_level_check:
+	; Temp level > Current Temp?
 	clr	C
-	mov	A, Temp3					; Check if current temperature is above or below average
-	subb	A, Current_Average_Temp
-	jz	temp_average_updated_load_acc	; Equal - no change
+	mov	 A, Temp3
+	subb A, Temp_Level
+	jz temp_level_updated			; Equal -> Level Updated
+	jnc temp_level_inc				; Below -> Increase
 
-	mov	A, Current_Average_Temp		; Above - increment average
-	jnc	temp_average_inc
+	; Above -> Decrease
+temp_level_dec:
+	mov	A, Temp_Level
+	jz	temp_level_updated			; Already zero (about 25ºC) - no change
 
-	jz	temp_average_updated		; Below - decrement average if average is not already zero
-temp_average_dec:
-	dec	A						; Decrement average
-	sjmp	temp_average_updated
+	; Decrease
+	dec A
+	mov Temp_Level, A
+	sjmp temp_level_updated			; Level Updated
 
-temp_average_inc:
-	inc	A						; Increment average
-	jz	temp_average_dec
-	sjmp	temp_average_updated
+temp_level_inc:
+	; Increase
+	mov	A, Temp_Level
+	inc	A
+	mov Temp_Level, A
+	jnz	temp_level_updated			; Level Updated
+	mov Temp_Level, #255
 
-temp_average_updated_load_acc:
-	mov	A, Current_Average_Temp
-temp_average_updated:
-	mov	Current_Average_Temp, A
+temp_level_updated:
+	mov	A, Temp_Level
 
 	clr	C
-	subb	A, Temp_Prot_Limit			; Is temperature below first limit?
-	jc	temp_check_exit			; Yes - exit
+	subb	A, Temp_Prot_Limit		; Is temperature below first limit?
+	jc	temp_increase_pwm_limit		; Yes - exit
 
-	mov	Pwm_Limit, #192			; No - limit pwm
+	mov	Pwm_Limit, #192				; No - limit pwm
 
 	clr	C
 	subb	A, #(TEMP_LIMIT_STEP / 2)	; Is temperature below second limit
-	jc	temp_check_exit			; Yes - exit
+	jc	temp_check_exit				; Yes - exit
 
-	mov	Pwm_Limit, #128			; No - limit pwm
+	mov	Pwm_Limit, #128				; No - limit pwm
 
 	clr	C
 	subb	A, #(TEMP_LIMIT_STEP / 2)	; Is temperature below third limit
-	jc	temp_check_exit			; Yes - exit
+	jc	temp_check_exit				; Yes - exit
 
 	mov	Pwm_Limit, #64				; No - limit pwm
 
 	clr	C
 	subb	A, #(TEMP_LIMIT_STEP / 2)	; Is temperature below final limit
-	jc	temp_check_exit			; Yes - exit
+	jc	temp_check_exit				; Yes - exit
 
 	mov	Pwm_Limit, #0				; No - limit pwm
 
@@ -1746,11 +1749,12 @@ temp_check_exit:
 
 temp_increase_pwm_limit:
 	mov	A, Pwm_Limit
-	add	A, #16					; Increase pwm limit
+	add	A, #1					; Increase pwm limit
+
 	jnc	($+4)					; Check if above maximum
 	mov	A, #255					; Set maximum value
 
-	mov	Pwm_Limit, A				; Set new pwm limit
+	mov	Pwm_Limit, A			; Set new pwm limit
 	ret
 
 
@@ -3705,25 +3709,25 @@ IF MCU_48MHZ == 1
 	mov	P2SKIP, #P2_SKIP
 	mov	SFRPAGE, #00h
 ENDIF
-	Initialize_Crossbar				; Initialize the crossbar and related functionality
+	Initialize_Crossbar					; Initialize the crossbar and related functionality
 	call	switch_power_off			; Switch power off again, after initializing ports
 
 	; Clear RAM
-	clr	A						; Clear accumulator
-	mov	Temp1, A					; Clear Temp1
+	clr	A								; Clear accumulator
+	mov	Temp1, A						; Clear Temp1
 	clear_ram:
-	mov	@Temp1, A					; Clear RAM address
+	mov	@Temp1, A						; Clear RAM address
 	djnz	Temp1, clear_ram			; Decrement address and repeat
 
 	call	set_default_parameters		; Set default programmed parameters
 	call	read_all_eeprom_parameters	; Read all programmed parameters
-	call	decode_settings			; Decode programmed settings
+	call	decode_settings				; Decode programmed settings
 
 	; Initializing beeps
-	clr	IE_EA					; Disable interrupts explicitly
+	clr	IE_EA							; Disable interrupts explicitly
 	call	wait100ms					; Wait a bit to avoid audible resets if not properly powered
 	call	play_beep_melody			; Play startup beep melody
-	call	led_control				; Set LEDs to programmed values
+	call	led_control					; Set LEDs to programmed values
 
 	call	wait100ms					; Wait for flight controller to get ready
 
@@ -3734,16 +3738,16 @@ ENDIF
 ;
 ;**** **** **** **** **** **** **** **** **** **** **** **** ****
 init_no_signal:
-	clr	IE_EA					; Disable interrupts explicitly
-	mov	Flash_Key_1, #0			; Initialize flash keys to invalid values
+	clr	IE_EA							; Disable interrupts explicitly
+	mov	Flash_Key_1, #0					; Initialize flash keys to invalid values
 	mov	Flash_Key_2, #0
 	call	switch_power_off
 
 IF MCU_48MHZ == 1
-	Set_MCU_Clk_24MHz				; Set clock frequency
+	Set_MCU_Clk_24MHz					; Set clock frequency
 ENDIF
 
-	mov	Temp1, #9					; Check if input signal is high for ~150ms
+	mov	Temp1, #9						; Check if input signal is high for ~150ms
 	mov	Temp2, #0
 	mov	Temp3, #0
 input_high_check:
@@ -3754,7 +3758,7 @@ input_high_check:
 
 	call	beep_enter_bootloader
 
-	ljmp	1C00h					; Jump to bootloader
+	ljmp	1C00h						; Jump to bootloader
 
 bootloader_done:
 	jnb	Flag_Had_Signal, setup_dshot	; Check if DShot signal was lost
@@ -3766,21 +3770,21 @@ bootloader_done:
 
 setup_dshot:
 	; Setup timers for DShot
-	mov	TCON, #51h				; Timer0/1 run and Int0 edge triggered
-	mov	CKCON0, #01h				; Timer0/1 clock is system clock divided by 4 (for DShot150)
-	mov	TMOD, #0AAh				; Timer0/1 set to 8-bits auto reload and gated by Int0/1
-	mov	TH0, #0					; Auto reload value zero
+	mov	TCON, #51h						; Timer0/1 run and Int0 edge triggered
+	mov	CKCON0, #01h					; Timer0/1 clock is system clock divided by 4 (for DShot150)
+	mov	TMOD, #0AAh						; Timer0/1 set to 8-bits auto reload and gated by Int0/1
+	mov	TH0, #0							; Auto reload value zero
 	mov	TH1, #0
 
-	mov	TMR2CN0, #04h				; Timer2 enabled (system clock divided by 12)
-	mov	TMR3CN0, #04h				; Timer3 enabled (system clock divided by 12)
+	mov	TMR2CN0, #04h					; Timer2 enabled (system clock divided by 12)
+	mov	TMR3CN0, #04h					; Timer3 enabled (system clock divided by 12)
 
-	Initialize_PCA					; Initialize PCA
-	Set_Pwm_Polarity				; Set pwm polarity
-	Enable_Power_Pwm_Module			; Enable power pwm module
-	Enable_Damp_Pwm_Module			; Enable damping pwm module
-	Initialize_Comparator			; Initialize comparator
-	Initialize_Adc					; Initialize ADC operation
+	Initialize_PCA						; Initialize PCA
+	Set_Pwm_Polarity					; Set pwm polarity
+	Enable_Power_Pwm_Module				; Enable power pwm module
+	Enable_Damp_Pwm_Module				; Enable damping pwm module
+	Initialize_Comparator				; Initialize comparator
+	Initialize_Adc						; Initialize ADC operation
 	call	wait1ms
 
 	call	detect_rcp_level			; Detect RCP level (normal or inverted DShot)
@@ -3964,10 +3968,10 @@ motor_start:
 
 	jnb	ADC0CN0_ADINT, $			; Wait for adc conversion to complete
 
-	mov	Current_Average_Temp, ADC0L	; Read initial temperature
+	mov	Temp_Level, ADC0L	; Read initial temperature
 	mov	A, ADC0H
-	jnz	($+5)					; Is reading below 256?
-	mov	Current_Average_Temp, #0		; Yes - set average temperature value to zero
+	jnz	($+5)						; Is reading below 256?
+	mov	Temp_Level, #0		; Yes - set average temperature value to zero
 
 	mov	Adc_Conversion_Cnt, #8		; Make sure a temp reading is done
 	call	check_temp_and_limit_power
