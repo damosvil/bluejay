@@ -1673,13 +1673,16 @@ check_temp_and_limit_power:
 	mov	Adc_Conversion_Cnt, #0		; Reset temp check counter
 
 	; Wait for ADC conversion to complete
-	jnb	ADC0CN0_ADINT, $
+	jnb	ADC0CN0_ADINT, check_temp_and_limit_power	; Avoid infinite loop
 
 	; Read ADC 10 bit result
 	mov	Temp3, ADC0L
 	mov	Temp4, ADC0H
 
-	Stop_Adc
+	; Start a new ADC conversion after reading sample,
+	; so we don't have to wait next time
+	Stop_Acd
+	Start_Adc
 
 	mov	Temp2, #Pgm_Enable_Temp_Prot	; Is temp protection enabled?
 	mov	A, @Temp2
@@ -3952,14 +3955,14 @@ wait_for_start_nonzero:
 ;
 ;**** **** **** **** **** **** **** **** **** **** **** **** ****
 motor_start:
-	clr	IE_EA					; Disable interrupts
+	clr	IE_EA						; Disable interrupts
 	call	switch_power_off
 	setb	IE_EA					; Enable interrupts
 
 	clr	A
 	mov	Flags0, A					; Clear run time flags
 	mov	Flags1, A
-	mov	Demag_Detected_Metric, A		; Clear demag metric
+	mov	Demag_Detected_Metric, A	; Clear demag metric
 
 	call	wait1ms
 
@@ -3968,17 +3971,17 @@ motor_start:
 
 	jnb	ADC0CN0_ADINT, $			; Wait for adc conversion to complete
 
-	mov	Temp_Level, ADC0L	; Read initial temperature
+	mov	Temp_Level, ADC0L			; Read initial temperature
 	mov	A, ADC0H
 	jnz	($+5)						; Is reading below 256?
-	mov	Temp_Level, #0		; Yes - set average temperature value to zero
+	mov	Temp_Level, #0				; Yes - set average temperature value to zero
 
 	mov	Adc_Conversion_Cnt, #8		; Make sure a temp reading is done
 	call	check_temp_and_limit_power
 	mov	Adc_Conversion_Cnt, #8		; Make sure a temp reading is done next time
 
 	; Set up start operating conditions
-	clr	IE_EA					; Disable interrupts
+	clr	IE_EA						; Disable interrupts
 	mov	Temp2, #Pgm_Startup_Power_Max
 	mov	Pwm_Limit_Beg, @Temp2		; Set initial pwm limit
 	mov	Pwm_Limit, Pwm_Limit_Beg
@@ -4106,7 +4109,6 @@ run5:
 ; Run 6 = B(p-on) + A(n-pwm) - comparator C evaluated
 ; Out_cC changes from high to low
 run6:
-	Start_Adc						; Start adc conversion
 	call	wait_for_comp_out_low
 ;		setup_comm_wait
 ;		evaluate_comparator_integrity
