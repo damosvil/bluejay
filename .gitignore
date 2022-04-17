@@ -1,2 +1,5 @@
 /build
 /tools/.wine
+.cproject
+.project
+/.settings
