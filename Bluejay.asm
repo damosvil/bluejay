@@ -1692,7 +1692,7 @@ check_temp_conversion_counter:
 	Start_Adc
 
 	; Check TEMP_LIMIT in Base.inc and make calculations to understand temperature readings
-	; Is temperature reading below 256? (ADC 10bit value corresponding to 25ºC. Low cut value)
+	; Is temperature reading below 256? (ADC 10bit value corresponding to about 25ºC)
 	mov	A, Temp4
 	jz temp_level_dec				; Temperature below zero -> Decrease
 
@@ -1701,7 +1701,7 @@ check_temp_conversion_counter:
 	mov	 A, Temp3
 	subb A, Temp_Level
 	jz temp_level_updated			; Equal -> Level Updated
-	jnc temp_level_inc				; No -> Increase
+	jnc temp_level_inc				; No -> Increase temp level
 
 	; Yes -> Decrease
 temp_level_dec:
