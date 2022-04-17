@@ -124,18 +124,18 @@ DEFAULT_PGM_DEMAG_COMP			EQU	2	; 1=Disabled	2=Low		3=High
 DEFAULT_PGM_DIRECTION			EQU	1	; 1=Normal	2=Reversed	3=Bidir		4=Bidir rev
 DEFAULT_PGM_BEEP_STRENGTH		EQU	40	; 0..255 (BLHeli_S is 1..255)
 DEFAULT_PGM_BEACON_STRENGTH		EQU	80	; 0..255
-DEFAULT_PGM_BEACON_DELAY			EQU	4	; 1=1m		2=2m			3=5m			4=10m		5=Infinite
-DEFAULT_PGM_ENABLE_TEMP_PROT		EQU	7	; 0=Disabled	1=80C	2=90C	3=100C	4=110C	5=120C	6=130C	7=140C
+DEFAULT_PGM_BEACON_DELAY		EQU	4	; 1=1m		2=2m			3=5m			4=10m		5=Infinite
+DEFAULT_PGM_ENABLE_TEMP_PROT	EQU	7	; 0=Disabled	1=80C	2=90C	3=100C	4=110C	5=120C	6=130C	7=140C
 
 DEFAULT_PGM_BRAKE_ON_STOP		EQU	0	; 1=Enabled	0=Disabled
 DEFAULT_PGM_LED_CONTROL			EQU	0	; Byte for LED control. 2 bits per LED, 0=Off, 1=On
 
-DEFAULT_PGM_STARTUP_POWER_MIN		EQU	51	; 0..255 => (1000..1125 Throttle): value * (1000 / 2047) + 1000
-DEFAULT_PGM_STARTUP_BEEP			EQU	1	; 0=Short beep, 1=Melody
+DEFAULT_PGM_STARTUP_POWER_MIN	EQU	51	; 0..255 => (1000..1125 Throttle): value * (1000 / 2047) + 1000
+DEFAULT_PGM_STARTUP_BEEP		EQU	1	; 0=Short beep, 1=Melody
 DEFAULT_PGM_DITHERING			EQU	1	; 0=Disabled, 1=Enabled
 
-DEFAULT_PGM_STARTUP_POWER_MAX		EQU	25	; 0..255 => (1000..2000 Throttle): Maximum startup power
-DEFAULT_PGM_BRAKING_STRENGTH		EQU	255	; 0..255 => 0..100 % Braking
+DEFAULT_PGM_STARTUP_POWER_MAX	EQU	25	; 0..255 => (1000..2000 Throttle): Maximum startup power
+DEFAULT_PGM_BRAKING_STRENGTH	EQU	255	; 0..255 => 0..100 % Braking
 
 ;**** **** **** **** ****
 ; Temporary register definitions
@@ -197,7 +197,7 @@ Rcp_Stop_Cnt:				DS	1	; Counter for RC pulses below stop value
 Beacon_Delay_Cnt:			DS	1	; Counter to trigger beacon during wait for start
 
 Startup_Cnt:				DS	1	; Startup phase commutations counter (incrementing)
-Startup_Zc_Timeout_Cntd:		DS	1	; Startup zero cross timeout counter (decrementing)
+Startup_Zc_Timeout_Cntd:	DS	1	; Startup zero cross timeout counter (decrementing)
 Initial_Run_Rot_Cntd:		DS	1	; Initial run rotations counter (decrementing)
 Startup_Stall_Cnt:			DS	1	; Counts start/run attempts that resulted in stall. Reset upon a proper stop
 Demag_Detected_Metric:		DS	1	; Metric used to gauge demag event frequency
@@ -214,8 +214,8 @@ Comm_Period4x_L:			DS	1	; Timer2 ticks between the last 4 commutations (lo byte)
 Comm_Period4x_H:			DS	1	; Timer2 ticks between the last 4 commutations (hi byte)
 Comparator_Read_Cnt:		DS	1	; Number of comparator reads done
 
-Wt_Adv_Start_L:			DS	1	; Timer3 start point for commutation advance timing (lo byte)
-Wt_Adv_Start_H:			DS	1	; Timer3 start point for commutation advance timing (hi byte)
+Wt_Adv_Start_L:				DS	1	; Timer3 start point for commutation advance timing (lo byte)
+Wt_Adv_Start_H:				DS	1	; Timer3 start point for commutation advance timing (hi byte)
 Wt_Zc_Scan_Start_L:			DS	1	; Timer3 start point from commutation to zero cross scan (lo byte)
 Wt_Zc_Scan_Start_H:			DS	1	; Timer3 start point from commutation to zero cross scan (hi byte)
 Wt_Zc_Tout_Start_L:			DS	1	; Timer3 start point for zero cross scan timeout (lo byte)
@@ -223,7 +223,7 @@ Wt_Zc_Tout_Start_H:			DS	1	; Timer3 start point for zero cross scan timeout (hi 
 Wt_Comm_Start_L:			DS	1	; Timer3 start point from zero cross to commutation (lo byte)
 Wt_Comm_Start_H:			DS	1	; Timer3 start point from zero cross to commutation (hi byte)
 
-Pwm_Limit:				DS	1	; Maximum allowed pwm (8-bit)
+Pwm_Limit:					DS	1	; Maximum allowed pwm (8-bit)
 Pwm_Limit_By_Rpm:			DS	1	; Maximum allowed pwm for low or high rpm (8-bit)
 Pwm_Limit_Beg:				DS	1	; Initial pwm limit (8-bit)
 
@@ -231,8 +231,9 @@ Pwm_Braking_L:				DS	1	; Max Braking pwm (lo byte)
 Pwm_Braking_H:				DS	1	; Max Braking pwm (hi byte)
 
 Adc_Conversion_Cnt:			DS	1	; Adc conversion counter
-Temp_Level:			DS	1	; Current temperature level (lo byte ADC reading, assuming hi byte is 1)
+Temp_Level:					DS	1	; Current temperature level (lo byte ADC reading, assuming hi byte is 1)
 Temp_Prot_Limit:			DS	1	; Temperature protection limit
+Temp_Pwm_Level_Setpoint:	DS	1	; PWM level setpoint
 
 Beep_Strength:				DS	1	; Strength of beeps
 
@@ -245,7 +246,7 @@ DShot_Frame_Start_L:		DS	1	; DShot frame start timestamp (Timer2 lo byte)
 DShot_Frame_Start_H:		DS	1	; DShot frame start timestamp (Timer2 hi byte)
 DShot_Frame_Length_Thr:		DS	1	; DShot frame length criteria (Timer2 ticks)
 
-DShot_Cmd:				DS	1	; DShot command
+DShot_Cmd:					DS	1	; DShot command
 DShot_Cmd_Cnt:				DS	1	; DShot command count
 
 ; Pulse durations for GCR encoding DShot telemetry data
@@ -271,7 +272,7 @@ _Pgm_Rampup_Slope:			DS	1	;
 Pgm_Rpm_Power_Slope:		DS	1	; Low RPM power protection slope (factor)
 Pgm_Pwm_Freq:				DS	1	; PWM frequency (temporary method for display)
 Pgm_Direction:				DS	1	; Rotation direction
-_Pgm_Input_Pol:			DS	1	; Input PWM polarity
+_Pgm_Input_Pol:				DS	1	; Input PWM polarity
 Initialized_L_Dummy:		DS	1	; Place holder
 Initialized_H_Dummy:		DS	1	; Place holder
 _Pgm_Enable_TX_Program:		DS	1	; Enable/disable value for TX programming
@@ -279,10 +280,10 @@ Pgm_Braking_Strength:		DS	1	; Set maximum braking strength (complementary pwm)
 _Pgm_Gov_Setup_Target:		DS	1	; Main governor setup target
 _Pgm_Startup_Rpm:			DS	1	; Startup RPM
 _Pgm_Startup_Accel:			DS	1	; Startup acceleration
-_Pgm_Volt_Comp:			DS	1	; Voltage comp
+_Pgm_Volt_Comp:				DS	1	; Voltage comp
 Pgm_Comm_Timing:			DS	1	; Commutation timing
 _Pgm_Damping_Force:			DS	1	; Damping force
-_Pgm_Gov_Range:			DS	1	; Governor range
+_Pgm_Gov_Range:				DS	1	; Governor range
 _Pgm_Startup_Method:		DS	1	; Startup method
 _Pgm_Min_Throttle:			DS	1	; Minimum throttle
 _Pgm_Max_Throttle:			DS	1	; Maximum throttle
@@ -290,7 +291,7 @@ Pgm_Beep_Strength:			DS	1	; Beep strength
 Pgm_Beacon_Strength:		DS	1	; Beacon strength
 Pgm_Beacon_Delay:			DS	1	; Beacon delay
 _Pgm_Throttle_Rate:			DS	1	; Throttle rate
-Pgm_Demag_Comp:			DS	1	; Demag compensation
+Pgm_Demag_Comp:				DS	1	; Demag compensation
 _Pgm_BEC_Voltage_High:		DS	1	; BEC voltage
 _Pgm_Center_Throttle:		DS	1	; Center throttle (in bidirectional mode)
 _Pgm_Main_Spoolup_Time:		DS	1	; Main spoolup time
@@ -302,7 +303,7 @@ Pgm_Brake_On_Stop:			DS	1	; Braking when throttle is zero
 Pgm_LED_Control:			DS	1	; LED control
 
 ISEG AT 0B0h
-Stack:					DS	16	; Reserved stack space
+Stack:						DS	16	; Reserved stack space
 
 ISEG AT 0C0h
 Dithering_Patterns:			DS	16	; Bit patterns for pwm dithering
@@ -1666,14 +1667,20 @@ set_pwm_limit_high_rpm_store:
 ;
 ;**** **** **** **** **** **** **** **** **** **** **** **** ****
 check_temp_and_limit_power:
+	; Check temp protection enabled?
+	mov	Temp2, #Pgm_Enable_Temp_Prot
+	mov	A, @Temp2
+	jz	temp_check_exit				; No -> Exit
+
+check_temp_conversion_counter:
 	; Increment conversion counter and check temp rate is reached
 	inc	Adc_Conversion_Cnt
 	mov  A, Adc_Conversion_Cnt
 	cjne A, #TEMP_CHECK_RATE, temp_check_exit
 	mov	Adc_Conversion_Cnt, #0		; Reset temp check counter
 
-	; Wait for ADC conversion to complete
-	jnb	ADC0CN0_ADINT, check_temp_and_limit_power	; Avoid infinite loop
+	; Check ADC conversion is done
+	jnb	ADC0CN0_ADINT, check_temp_conversion_counter	; Avoid infinite loop
 
 	; Read ADC 10 bit result
 	mov	Temp3, ADC0L
@@ -1681,28 +1688,22 @@ check_temp_and_limit_power:
 
 	; Start a new ADC conversion after reading sample,
 	; so we don't have to wait next time
-	Stop_Acd
+	Stop_Adc
 	Start_Adc
-
-	mov	Temp2, #Pgm_Enable_Temp_Prot	; Is temp protection enabled?
-	mov	A, @Temp2
-	jz	temp_check_exit				; No - branch
 
 	; Check TEMP_LIMIT in Base.inc and make calculations to understand temperature readings
 	; Is temperature reading below 256? (ADC 10bit value corresponding to 25ºC. Low cut value)
 	mov	A, Temp4
-	jnz	temp_level_check			; No -> Check
-	jmp temp_level_dec				; Yes -> Decrease
+	jz temp_level_dec				; Temperature below zero -> Decrease
 
-temp_level_check:
 	; Temp level > Current Temp?
 	clr	C
 	mov	 A, Temp3
 	subb A, Temp_Level
 	jz temp_level_updated			; Equal -> Level Updated
-	jnc temp_level_inc				; Below -> Increase
+	jnc temp_level_inc				; No -> Increase
 
-	; Above -> Decrease
+	; Yes -> Decrease
 temp_level_dec:
 	mov	A, Temp_Level
 	jz	temp_level_updated			; Already zero (about 25ºC) - no change
@@ -1717,6 +1718,7 @@ temp_level_inc:
 	mov	A, Temp_Level
 	inc	A
 	mov Temp_Level, A
+
 	jnz	temp_level_updated			; Level Updated
 	mov Temp_Level, #255
 
@@ -1725,39 +1727,54 @@ temp_level_updated:
 
 	clr	C
 	subb	A, Temp_Prot_Limit		; Is temperature below first limit?
-	jc	temp_increase_pwm_limit		; Yes - exit
+	jc	temp_update_pwm_limit		; Yes - exit
 
-	mov	Pwm_Limit, #192				; No - limit pwm
+	mov	Temp_Pwm_Level_Setpoint, #200	; No - update pwm limit (about 80%)
 
 	clr	C
 	subb	A, #(TEMP_LIMIT_STEP / 2)	; Is temperature below second limit
-	jc	temp_check_exit				; Yes - exit
+	jc	temp_update_pwm_limit			; Yes - exit
 
-	mov	Pwm_Limit, #128				; No - limit pwm
+	mov	Temp_Pwm_Level_Setpoint, #150	; No - update pwm limit (about 60%)
 
 	clr	C
 	subb	A, #(TEMP_LIMIT_STEP / 2)	; Is temperature below third limit
-	jc	temp_check_exit				; Yes - exit
+	jc	temp_update_pwm_limit			; Yes - exit
 
-	mov	Pwm_Limit, #64				; No - limit pwm
+	mov	Temp_Pwm_Level_Setpoint, #100	; No - update pwm limit (about 40% allowing landing)
 
 	clr	C
 	subb	A, #(TEMP_LIMIT_STEP / 2)	; Is temperature below final limit
-	jc	temp_check_exit				; Yes - exit
+	jc	temp_update_pwm_limit			; Yes - exit
 
-	mov	Pwm_Limit, #0				; No - limit pwm
+	mov	Temp_Pwm_Level_Setpoint, #0		; No - update pwm limit
+
+temp_update_pwm_limit:
+	; pwm limit is updated one unit at a time to avoid abrupt pwm changes
+	; resulting in current spikes
+	; Compare pwm limit to setpoint
+	clr C
+	mov	A, Pwm_Limit
+	subb A, Temp_Pwm_Level_Setpoint
+	jz temp_check_exit					; pwm limit == setpoint -> exit
+	jc temp_update_pwm_limit_inc		; pwm limit < setpoint -> increase pwm limit
+
+	; Decrease pwm limit
+	mov A, Pwm_Limit
+	jz temp_check_exit					; pwm limit is 0 -> Exit
+	dec A
+	mov Pwm_Limit, A
+	jmp temp_check_exit
+
+temp_update_pwm_limit_inc:
+	; Increase pwm limit
+	mov A, Pwm_Limit
+	inc A
+	mov Pwm_Limit, A
+	jnz temp_check_exit					; pwm limit not 0 -> Exit
+	mov Pwm_Limit, #255					; else set pwm limit to max & exit
 
 temp_check_exit:
-	ret
-
-temp_increase_pwm_limit:
-	mov	A, Pwm_Limit
-	add	A, #1					; Increase pwm limit
-
-	jnc	($+4)					; Check if above maximum
-	mov	A, #255					; Set maximum value
-
-	mov	Pwm_Limit, A			; Set new pwm limit
 	ret
 
 
