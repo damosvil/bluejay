@@ -119,20 +119,6 @@ DT_C2	EQU	"0" + (DEADTIME / 100)
 DT_C1	EQU	"0" + ((DEADTIME / 10) MOD 10)
 DT_C0	EQU	"0" + (DEADTIME MOD 10)
 
-CSEG AT 1A40h						; ESC layout tag
-IF DEADTIME < 100
-Eep_ESC_Layout:	DB	"#", ESC_C, "_", MCU_C, "_", DT_C1, DT_C0, "#        "
-ELSE
-Eep_ESC_Layout:	DB	"#", ESC_C, "_", MCU_C, "_", DT_C2, DT_C1, DT_C0, "#       "
-ENDIF
-
-CSEG AT 1A50h						; Project and MCU tag (16 Bytes)
-IF MCU_48MHZ == 0
-Eep_ESC_MCU:		DB	"#BLHELI$EFM8B10#"
-ELSE
-Eep_ESC_MCU:		DB	"#BLHELI$EFM8B21#"
-ENDIF
-
 Interrupt_Table_Definition MACRO
 CSEG AT 0							;; Code segment start
 	jmp	reset
