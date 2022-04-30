@@ -123,9 +123,9 @@ DEFAULT_PGM_COMM_TIMING			EQU	4	; 1=Low		2=MediumLow	3=Medium		4=MediumHigh	5=Hi
 DEFAULT_PGM_DEMAG_COMP			EQU	2	; 1=Disabled	2=Low		3=High
 DEFAULT_PGM_DIRECTION			EQU	1	; 1=Normal	2=Reversed	3=Bidir		4=Bidir rev
 DEFAULT_PGM_BEEP_STRENGTH		EQU	40	; 0..255 (BLHeli_S is 1..255)
-DEFAULT_PGM_BEACON_STRENGTH		EQU	80	; 0..255
+DEFAULT_PGM_BEACON_STRENGTH		EQU	120	; 0..255
 DEFAULT_PGM_BEACON_DELAY		EQU	4	; 1=1m		2=2m			3=5m			4=10m		5=Infinite
-DEFAULT_PGM_ENABLE_TEMP_PROT	EQU	7	; 0=Disabled	1=80C	2=90C	3=100C	4=110C	5=120C	6=130C	7=140C
+DEFAULT_PGM_ENABLE_TEMP_PROT	EQU	1	; 0=Disabled	1=80C	2=90C	3=100C	4=110C	5=120C	6=130C	7=140C
 
 DEFAULT_PGM_BRAKE_ON_STOP		EQU	0	; 1=Enabled	0=Disabled
 DEFAULT_PGM_LED_CONTROL			EQU	0	; Byte for LED control. 2 bits per LED, 0=Off, 1=On
@@ -1689,10 +1689,10 @@ check_temp_and_limit_power:
 
 check_temp_conversion_counter:
 	; Increment conversion counter and check temp rate is reached
-	inc	Adc_Conversion_Cnt
+	dec	Adc_Conversion_Cnt
 	mov  A, Adc_Conversion_Cnt
-	cjne A, #TEMP_CHECK_RATE, temp_check_exit
-	mov	Adc_Conversion_Cnt, #0		; Reset temp check counter
+	jnz temp_check_exit
+	mov	Adc_Conversion_Cnt, #TEMP_CHECK_RATE		; Reset temp check counter
 
 	; Check ADC conversion is done
 	jnb	ADC0CN0_ADINT, check_temp_conversion_counter	; Avoid infinite loop
@@ -1709,7 +1709,7 @@ check_temp_conversion_counter:
 	; Check TEMP_LIMIT in Base.inc and make calculations to understand temperature readings
 	; Is temperature reading below 256? (ADC 10bit value corresponding to about 25ºC)
 	mov	A, Temp4
-	jz temp_level_dec				; Temperature below zero -> Decrease
+	jz temp_level_dec				; Temperature below 25ºC -> Decrease
 
 	; Temp level > Current Temp?
 	clr	C
@@ -1724,15 +1724,13 @@ temp_level_dec:
 	jz	temp_level_updated			; Already zero (about 25ºC) - no change
 
 	; Decrease
-	dec A
-	mov Temp_Level, A
+	dec Temp_Level
 	sjmp temp_level_updated			; Level Updated
 
 temp_level_inc:
 	; Increase
+	inc Temp_Level
 	mov	A, Temp_Level
-	inc	A
-	mov Temp_Level, A
 
 	jnz	temp_level_updated			; Level Updated
 	mov Temp_Level, #255
@@ -1740,9 +1738,11 @@ temp_level_inc:
 temp_level_updated:
 	mov	A, Temp_Level
 
+	mov	Temp_Pwm_Level_Setpoint, #255	; Remove setpoint
+
 	clr	C
-	subb	A, Temp_Prot_Limit		; Is temperature below first limit?
-	jc	temp_update_pwm_limit		; Yes - exit
+	subb	A, Temp_Prot_Limit			; Is temperature below first limit?
+	jc	temp_update_pwm_limit			; Yes - exit
 
 	mov	Temp_Pwm_Level_Setpoint, #200	; No - update pwm limit (about 80%)
 
@@ -4008,9 +4008,9 @@ motor_start:
 	jnz	($+5)						; Is reading below 256?
 	mov	Temp_Level, #0				; Yes - set average temperature value to zero
 
-	mov	Adc_Conversion_Cnt, #8		; Make sure a temp reading is done
+	mov	Adc_Conversion_Cnt, #1		; Make sure a temp reading is done
 	call	check_temp_and_limit_power
-	mov	Adc_Conversion_Cnt, #8		; Make sure a temp reading is done next time
+	mov	Adc_Conversion_Cnt, #1		; Make sure a temp reading is done next time
 
 	; Set up start operating conditions
 	clr	IE_EA						; Disable interrupts
