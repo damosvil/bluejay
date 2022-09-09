@@ -4284,8 +4284,8 @@ initial_run_phase:
 
 	mov	Initial_Run_Rot_Cntd, A		; Not zero - store counter
 
-	jnb	Flag_Rcp_Stop, run6_bidir_continue	; Check if pulse is below stop value
-	jb	Flag_Pgm_Bidir, run6_bidir_continue	; Check if bidirectional operation
+	jnb	Flag_Rcp_Stop, run1			; Check if pulse is below stop value
+	jb	Flag_Pgm_Bidir, run1		; Check if bidirectional operation
 
 	sjmp	exit_run_mode
 
